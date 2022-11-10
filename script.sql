@@ -26,9 +26,7 @@ CREATE TABLE pessoas (
 
 CREATE TABLE passageiros (
 	id_pessoa_passageiro		NUMBER(5)		NOT NULL,
-	numero_passagem				NUMBER(5)		NOT NULL,
-	CONSTRAINT pk_passageiros PRIMARY KEY (id_pessoa_passageiro),
-	CONSTRAINT uk_passageiros_num_passagem UNIQUE (numero_passagem)
+	CONSTRAINT pk_passageiros PRIMARY KEY (id_pessoa_passageiro)
 );
 
 CREATE TABLE pilotos (
@@ -58,6 +56,7 @@ CREATE TABLE passagens (
 	id_tipo_passagem			NUMBER(5)		NOT NULL,
 	numero_voo					CHAR(10)		NOT NULL,
 	preco						NUMBER(7,2)		NOT NULL,
+	id_pessoa_passageiro		NUMBER(5)		NOT NULL,
 	CONSTRAINT pk_passagens	PRIMARY KEY (numero_passagem),
 	CONSTRAINT check_tipos_passagens_preco CHECK (preco > 0)
 );
@@ -136,13 +135,13 @@ CREATE TABLE aeroporto_intermediario (
 
 CREATE TABLE rotas (
 	id_rota						NUMBER(5)		NOT NULL,
+	descricao					VARCHAR2(100)	NOT NULL,
 	CONSTRAINT pk_rotas PRIMARY KEY (id_rota)
 );
 
 --=============================================================================================================================================================
 -- FOREIGN KEYS
 ALTER TABLE passageiros ADD CONSTRAINT fk_passageiros_pessoas FOREIGN KEY (id_pessoa_passageiro) REFERENCES pessoas (id_pessoa);
-ALTER TABLE passageiros ADD CONSTRAINT fk_passageiros_passagens FOREIGN KEY (numero_passagem) REFERENCES passagens (numero_passagem);
 
 ALTER TABLE pilotos ADD CONSTRAINT fk_pilotos_pessoas FOREIGN KEY (id_pessoa_piloto) REFERENCES pessoas (id_pessoa);
 
@@ -151,7 +150,9 @@ CREATE INDEX idx_bagagens_id_pessoa_dono ON bagagens (id_pessoa_dono);
 
 ALTER TABLE passagens ADD CONSTRAINT fk_passagens_tipo_passagem FOREIGN KEY (id_tipo_passagem) REFERENCES tipos_passagens (id_tipo_passagem);
 ALTER TABLE passagens ADD CONSTRAINT fk_passagens_voos FOREIGN KEY (numero_voo) REFERENCES voos (numero_voo);
+ALTER TABLE passagens ADD CONSTRAINT fe_passagens_passageiros FOREIGN KEY (id_pessoa_passageiro) REFERENCES passageiros (id_pessoa_passageiro);
 CREATE INDEX idx_passagens_numero_voo ON passagens (numero_voo);
+CREATE INDEX idx_passagens_id_passageiro ON passagens (id_pessoa_passageiro);
 
 ALTER TABLE voos ADD CONSTRAINT fk_voos_pilotos FOREIGN KEY (id_pessoa_piloto) REFERENCES pilotos (id_pessoa_piloto);
 ALTER TABLE voos ADD CONSTRAINT fk_voos_aeronaves FOREIGN KEY (id_aeronave) REFERENCES aeronaves (id_aeronave);
@@ -162,10 +163,12 @@ CREATE INDEX idx_voos_id_rota ON voos (id_rota);
 
 ALTER TABLE bagagens_em_transporte ADD CONSTRAINT fk_bagagens_em_transp_bagagens FOREIGN KEY (id_bagagem) REFERENCES bagagens (id_bagagem);
 ALTER TABLE bagagens_em_transporte ADD CONSTRAINT fk_bagagens_em_transp_voos FOREIGN KEY (numero_voo) REFERENCES voos (numero_voo);
+CREATE INDEX idx_bag_em_tran_id ON bagagens_em_transporte (id_bagagem, numero_voo);
 
 ALTER TABLE aeronaves ADD CONSTRAINT fk_aeronaves_aeroportos FOREIGN KEY (cod_IATA_aeroporto_atual) REFERENCES aeroportos (cod_IATA_aeroporto);
 ALTER TABLE aeronaves ADD CONSTRAINT fk_aeronaves_cias_aereas FOREIGN KEY (id_cia_proprietaria) REFERENCES cias_aereas (id_cia);
 CREATE INDEX idx_aeronaves_id_cia_propr ON aeronaves (id_cia_proprietaria);
+CREATE INDEX idx_aeronaves_cod_IATA ON aeronaves (cod_IATA_aeroporto_atual);
 
 ALTER TABLE cias_no_aeroporto ADD CONSTRAINT fk_cias_no_aerop_aeroportos FOREIGN KEY (cod_IATA_aeroporto) REFERENCES aeroportos (cod_IATA_aeroporto);
 ALTER TABLE cias_no_aeroporto ADD CONSTRAINT fk_cias_no_aerop_cias_aereas FOREIGN KEY (id_cia) REFERENCES cias_aereas (id_cia);
@@ -184,9 +187,9 @@ INSERT INTO pessoas (id_pessoa, nome, cpf, idade) VALUES (4, 'Guilherme Stein', 
 INSERT INTO pessoas (id_pessoa, nome, cpf, idade) VALUES (5, 'João Wendt', '88122312987', 19);
 COMMIT;
 
-INSERT INTO tipos_passagens (id_tipo_passagem, preco, descricao) VALUES (1, 'Classe econômica');
-INSERT INTO tipos_passagens (id_tipo_passagem, preco, descricao) VALUES (2, 'Classe executiva');
-INSERT INTO tipos_passagens (id_tipo_passagem, preco, descricao) VALUES (3, 'Primeira classe');
+INSERT INTO tipos_passagens (id_tipo_passagem, descricao) VALUES (1, 'Classe econômica');
+INSERT INTO tipos_passagens (id_tipo_passagem, descricao) VALUES (2, 'Classe executiva');
+INSERT INTO tipos_passagens (id_tipo_passagem, descricao) VALUES (3, 'Primeira classe');
 COMMIT;
 
 INSERT INTO cias_aereas (id_cia, nome, limite_peso_bagagem, limite_altura_bagagem, limite_largura_bagagem, limite_comprimento_bagagem, codigo) 
@@ -194,7 +197,7 @@ INSERT INTO cias_aereas (id_cia, nome, limite_peso_bagagem, limite_altura_bagage
 INSERT INTO cias_aereas (id_cia, nome, limite_peso_bagagem, limite_altura_bagagem, limite_largura_bagagem, limite_comprimento_bagagem, codigo) 
 			VALUES (2, 'LATAM Airlines Brasil', 23, 55, 25, 35, 'LA');
 INSERT INTO cias_aereas (id_cia, nome, limite_peso_bagagem, limite_altura_bagagem, limite_largura_bagagem, limite_comprimento_bagagem, codigo) 
-			VALUES (3, 'Azul Linhas Aéreas Brasileiras', 10, 55, 25, 35, 'GL');
+			VALUES (3, 'Azul Linhas Aéreas Brasileiras', 10, 55, 25, 35, 'AZ');
 COMMIT;
 
 INSERT INTO aeroportos (cod_IATA_aeroporto, latitude, longitude, nome) VALUES ('POA', -29.9942, -51.1714, 'Aeroporto Internacional Salgado Filho');
@@ -233,4 +236,43 @@ INSERT INTO cias_no_aeroporto (cod_IATA_aeroporto, id_cia) VALUES ('VCP', 2);
 INSERT INTO cias_no_aeroporto (cod_IATA_aeroporto, id_cia) VALUES ('VCP', 3);
 INSERT INTO cias_no_aeroporto (cod_IATA_aeroporto, id_cia) VALUES ('REC', 2);
 INSERT INTO cias_no_aeroporto (cod_IATA_aeroporto, id_cia) VALUES ('REC', 3);
+COMMIT;
+
+INSERT INTO rotas (id_rota, descricao) VALUES (1, 'POA-GRU-REC');
+INSERT INTO rotas (id_rota, descricao) VALUES (2, 'VCP-POA');
+INSERT INTO rotas (id_rota, descricao) VALUES (3, 'VCP-REC');
+COMMIT;
+
+INSERT INTO aeroporto_intermediario (id_rota, cod_IATA_aeroporto) VALUES (1, 'POA');
+INSERT INTO aeroporto_intermediario (id_rota, cod_IATA_aeroporto) VALUES (1, 'GRU');
+INSERT INTO aeroporto_intermediario (id_rota, cod_IATA_aeroporto) VALUES (1, 'REC');
+INSERT INTO aeroporto_intermediario (id_rota, cod_IATA_aeroporto) VALUES (2, 'VCP');
+INSERT INTO aeroporto_intermediario (id_rota, cod_IATA_aeroporto) VALUES (2, 'POA');
+INSERT INTO aeroporto_intermediario (id_rota, cod_IATA_aeroporto) VALUES (3, 'VCP');
+INSERT INTO aeroporto_intermediario (id_rota, cod_IATA_aeroporto) VALUES (3, 'REC');
+COMMIT;
+
+INSERT INTO voos (numero_voo, data_hora_partida, data_hora_chegada, id_pessoa_piloto, id_aeronave, id_cia_operadora, id_rota)
+			VALUES (1, TO_DATE('19/11/2022 02:35', 'DD/MM/YYYY HH24:MI'), TO_DATE('19/11/2022 05:45', 'DD/MM/YYYY HH24:MI'), 5, 1, 1, 3);
+INSERT INTO voos (numero_voo, data_hora_partida, data_hora_chegada, id_pessoa_piloto, id_aeronave, id_cia_operadora, id_rota)
+			VALUES (2, TO_DATE('20/11/2022 11:50', 'DD/MM/YYYY HH24:MI'), TO_DATE('20/11/2022 17:35', 'DD/MM/YYYY HH24:MI'), 2, 3, 2, 1);
+COMMIT;
+
+INSERT INTO passageiros (id_pessoa_passageiro) VALUES (1);
+INSERT INTO passageiros (id_pessoa_passageiro) VALUES (3);
+INSERT INTO passageiros (id_pessoa_passageiro) VALUES (4);
+COMMIT;
+
+INSERT INTO passagens (numero_passagem, id_tipo_passagem, numero_voo, preco, id_pessoa_passageiro)
+			VALUES (1, 1, 2, 3500.00, 3);
+INSERT INTO passagens (numero_passagem, id_tipo_passagem, numero_voo, preco, id_pessoa_passageiro)
+			VALUES (2, 3, 2, 6500.00, 1);
+INSERT INTO passagens (numero_passagem, id_tipo_passagem, numero_voo, preco, id_pessoa_passageiro)
+			VALUES (3, 2, 1, 4000.00, 4);
+COMMIT;
+
+INSERT INTO bagagens_em_transporte (id_bagagem, numero_voo) VALUES (1, 1);
+INSERT INTO bagagens_em_transporte (id_bagagem, numero_voo) VALUES (2, 2);
+INSERT INTO bagagens_em_transporte (id_bagagem, numero_voo) VALUES (3, 1);
+INSERT INTO bagagens_em_transporte (id_bagagem, numero_voo) VALUES (4, 1);
 COMMIT;
